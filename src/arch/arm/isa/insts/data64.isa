@@ -155,6 +155,7 @@ let {{
             "Dest64 = resTemp = Op164 + secOp + %s;" % oldC, "add")
     buildXSRegDataInst("sbc",
             "Dest64 = resTemp = Op164 - secOp - !%s;" % oldC, "sub")
+    buildXSRegDataInst("mov", "Dest64 = Op164 | secOp;", buildCc = False)
     buildDataInst("orr", "Dest64 = Op164 | secOp;", buildCc = False)
     buildXSRegDataInst("orn", "Dest64 = Op164 | ~secOp;", buildCc = False)
     buildXSRegDataInst("bic", "Dest64 = resTemp = Op164 & ~secOp;")

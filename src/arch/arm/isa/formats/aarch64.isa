@@ -1244,6 +1244,7 @@ namespace Aarch64
             uint8_t switchVal = (bits(machInst, 21) << 0) |
                                 (bits(machInst, 30, 29) << 1);
             ArmShiftType type = (ArmShiftType)(uint8_t)bits(machInst, 23, 22);
+            uint32_t shift = bits(machInst, 23, 22);
             uint8_t imm6 = bits(machInst, 15, 10);
             bool sf = bits(machInst, 31);
             if (!sf && (imm6 & 0x20))
@@ -1251,6 +1252,7 @@ namespace Aarch64
             IntRegIndex rd = (IntRegIndex)(uint8_t)bits(machInst, 4, 0);
             IntRegIndex rdzr = makeZero(rd);
             IntRegIndex rn = (IntRegIndex)(uint8_t)bits(machInst, 9, 5);
+            IntRegIndex rnzr = makeZero(rn);
             IntRegIndex rm = (IntRegIndex)(uint8_t)bits(machInst, 20, 16);
 
             switch (switchVal) {
@@ -1259,7 +1261,10 @@ namespace Aarch64
               case 0x1:
                 return new BicXSReg(machInst, rdzr, rn, rm, imm6, type);
               case 0x2:
-                return new OrrXSReg(machInst, rdzr, rn, rm, imm6, type);
+                if (shift == 0 && imm6 == 0 && rnzr == INTREG_ZERO)
+                  return new MovXSReg(machInst, rd, rnzr, rm, imm6, type);
+                else
+                  return new OrrXSReg(machInst, rdzr, rn, rm, imm6, type);
               case 0x3:
                 return new OrnXSReg(machInst, rdzr, rn, rm, imm6, type);
               case 0x4:
