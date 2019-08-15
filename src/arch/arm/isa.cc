@@ -2216,7 +2216,8 @@ ISA::readMem(BaseCPU *cpu, ThreadContext *tc, Addr addr,
 void
 ISA::dumpFP(BaseCPU *cpu, ThreadContext *tc, int offset)
 {
-    cpu->simpoint_asm << "  add   x29, sp, #" << offset << std::endl;
+    cpu->simpoint_asm << "  ldr   x29, =" << offset << std::endl;
+    cpu->simpoint_asm << "  add   x29, sp, x29" << std::endl;
 }
 
 void
@@ -2242,7 +2243,8 @@ ISA::dumpLR(BaseCPU *cpu, ThreadContext *tc, Addr lr)
 void
 ISA::dumpStackedFP(BaseCPU *cpu, ThreadContext *tc, int offset)
 {
-    cpu->simpoint_asm << "  add   x29, sp, #" << offset << std::endl;
+    cpu->simpoint_asm << "  ldr   x29, =" << offset << std::endl;
+    cpu->simpoint_asm << "  add   x29, sp, x29" << std::endl;
     cpu->simpoint_asm << "  str   x29, [sp, #8]" << std::endl;
 }
 
