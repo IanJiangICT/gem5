@@ -2292,7 +2292,7 @@ ISA::dumpContextRegsEarly(BaseCPU *cpu, ThreadContext *tc,
     std::stack<int> lr_idx_queue;
 
     if (cpu->simpoint_asm.is_open()) {
-        cpu->simpoint_asm << ".global simpoint_start" << std::endl;
+        cpu->simpoint_asm << ".global simpoint_entry" << std::endl;
         cpu->simpoint_asm << "simpoint_entry:" << std::endl;
         // Save special registers, PC is not saved as the dumped symbols
         // will be linked into the new binary that is executed using the
