@@ -34,6 +34,7 @@ DebugFlag('Activity')
 DebugFlag('Commit')
 DebugFlag('Context')
 DebugFlag('Decode')
+DebugFlag('DisasmGcc', 'Format: Give assembly compliant with GCC')
 DebugFlag('DynInst')
 DebugFlag('ExecEnable',
         'Filter: Enable exec tracing (no tracing without this)')
@@ -59,6 +60,8 @@ DebugFlag('O3PipeView')
 DebugFlag('PCEvent')
 DebugFlag('Quiesce')
 DebugFlag('Mwait')
+
+CompoundFlag('Disasm', [ 'DisasmGcc' ])
 
 CompoundFlag('ExecAll', [ 'ExecEnable', 'ExecCPSeq', 'ExecEffAddr',
     'ExecFaulting', 'ExecFetchSeq', 'ExecOpClass', 'ExecRegDelta',
