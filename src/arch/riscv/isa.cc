@@ -34,6 +34,7 @@
 #include <set>
 #include <sstream>
 
+#include "arch/riscv/insts/static_inst.hh"
 #include "arch/riscv/interrupts.hh"
 #include "cpu/base.hh"
 #include "debug/RiscvMisc.hh"
@@ -207,6 +208,48 @@ ISA::setMiscReg(int misc_reg, RegVal val, ThreadContext *tc)
             setMiscRegNoEffect(misc_reg, val);
         }
     }
+}
+
+void
+ISA::dumpSimpointInit(BaseCPU *cpu)
+{
+    cpu->simpoint_asm << "/* Begin of SimPoint */" << std::endl;
+    cpu->simpoint_asm << ".global simpoint_entry" << std::endl;
+    cpu->simpoint_asm << ".section .text" << std::endl;
+    cpu->simpoint_asm << ".balign 4" << std::endl;
+    cpu->simpoint_asm << "simpoint_entry:" << std::endl;
+    /* TODO
+    // Insert one special instruction XXX to help debugging.
+    */
+
+    cpu->simpoint_asm << "   jal simpoint_dump_memory_entry" << std::endl;
+    cpu->simpoint_asm << "simpoint_dump_memory_exit:" << std::endl;
+    cpu->simpoint_asm << std::endl;
+}
+
+void
+ISA::dumpSimpointExit(BaseCPU *cpu)
+{
+    cpu->simpoint_asm << "/* End of SimPoint */" << std::endl;
+    cpu->simpoint_asm << "simpoint_exit:" << std::endl;
+    cpu->simpoint_asm << "exit:" << std::endl;
+    cpu->simpoint_asm << "  nop" << std::endl;
+    cpu->simpoint_asm << "  jal simpoint_exit" << std::endl;
+    cpu->simpoint_asm << std::endl;
+}
+
+void
+ISA::dumpSimpointStart(BaseCPU *cpu)
+{
+    cpu->simpoint_asm << "/* Jump to the head of SimPoint */" << std::endl;
+    cpu->simpoint_asm << "  jal simpoint_start" << std::endl;
+}
+
+void
+ISA::dumpSimpointStop(BaseCPU *cpu)
+{
+    cpu->simpoint_asm << "/* Jump to the tail of SimPoint */" << std::endl;
+    cpu->simpoint_asm << "  jal simpoint_exit" << std::endl;
 }
 
 }

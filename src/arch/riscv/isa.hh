@@ -115,13 +115,13 @@ class ISA : public SimObject
     void dumpMemU64(BaseCPU *cpu, Addr addr, uint64_t value) {}
     void dumpMemEnd(BaseCPU *cpu) {}
     // Dump init of simpoint
-    void dumpSimpointInit(BaseCPU *cpu) {}
+    void dumpSimpointInit(BaseCPU *cpu);
     // Dump exit of simpoint
-    void dumpSimpointExit(BaseCPU *cpu) {}
+    void dumpSimpointExit(BaseCPU *cpu);
     // Dump start of simpoint
-    void dumpSimpointStart(BaseCPU *cpu) {}
+    void dumpSimpointStart(BaseCPU *cpu);
     // Dump stop of simpoint
-    void dumpSimpointStop(BaseCPU *cpu) {}
+    void dumpSimpointStop(BaseCPU *cpu);
 
     /// Explicitly import the otherwise hidden startup
     using SimObject::startup;

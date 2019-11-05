@@ -82,6 +82,7 @@ class Decoder
     StaticInstPtr decode(ExtMachInst mach_inst, Addr addr);
 
     StaticInstPtr decode(RiscvISA::PCState &nextPC);
+    ExtMachInst getInst() const { return emi; };
 };
 
 } // namespace RiscvISA
