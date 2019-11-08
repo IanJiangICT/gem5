@@ -93,12 +93,12 @@ class ISA : public SimObject
     void startup(ThreadContext *tc) {}
 
     // Dump register context
-    void dumpGenRegStore(BaseCPU *cpu, ThreadContext *tc) {}
-    void dumpGenRegLoad(BaseCPU *cpu, ThreadContext *tc) {}
-    void dumpMiscRegStore(BaseCPU *cpu, ThreadContext *tc) {}
-    void dumpMiscRegLoad(BaseCPU *cpu, ThreadContext *tc) {}
-    void dumpContextRegsEarly(BaseCPU *cpu, ThreadContext *tc) {}
-    void dumpContextRegsLate(BaseCPU *cpu, ThreadContext *tc) {}
+    void dumpGenRegStore(BaseCPU *cpu, ThreadContext *tc);
+    void dumpGenRegLoad(BaseCPU *cpu, ThreadContext *tc);
+    void dumpMiscRegStore(BaseCPU *cpu, ThreadContext *tc);
+    void dumpMiscRegLoad(BaseCPU *cpu, ThreadContext *tc);
+    void dumpContextRegsEarly(BaseCPU *cpu, ThreadContext *tc);
+    void dumpContextRegsLate(BaseCPU *cpu, ThreadContext *tc);
     void dumpStackStore(BaseCPU *cpu, ThreadContext *tc,
         bool (*__readMem)(BaseCPU *cpu, Addr, uint8_t *, unsigned,
                           Request::Flags)) {}
