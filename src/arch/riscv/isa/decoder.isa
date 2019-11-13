@@ -400,7 +400,7 @@ decode QUADRANT default Unknown::unknown() {
         }
 
         0x03: decode FUNCT3 {
-            format IOp {
+            format IFenceOp {
                 0x0: fence({{
                 }}, uint64_t, IsMemBarrier, No_OpClass);
                 0x1: fence_i({{
@@ -415,10 +415,10 @@ decode QUADRANT default Unknown::unknown() {
                 }});
                 0x1: slli({{
                     Rd = Rs1 << SHAMT6;
-                }});
+                }}, imm_type = uint64_t, imm_code = {{ imm = SHAMT6; }});
                 0x2: slti({{
                     Rd = (Rs1_sd < imm) ? 1 : 0;
-                }});
+                }}, imm_type = uint64_t, imm_code = {{ imm = SHAMT6; }});
                 0x3: sltiu({{
                     Rd = (Rs1 < imm) ? 1 : 0;
                 }}, uint64_t);
@@ -428,10 +428,10 @@ decode QUADRANT default Unknown::unknown() {
                 0x5: decode SRTYPE {
                     0x0: srli({{
                         Rd = Rs1 >> SHAMT6;
-                    }});
+                    }}, imm_type = uint64_t, imm_code = {{ imm = SHAMT6; }});
                     0x1: srai({{
                         Rd_sd = Rs1_sd >> SHAMT6;
-                    }});
+                    }}, imm_type = uint64_t, imm_code = {{ imm = SHAMT6; }});
                 }
                 0x6: ori({{
                     Rd = Rs1 | imm;
@@ -453,14 +453,14 @@ decode QUADRANT default Unknown::unknown() {
                 }}, int32_t);
                 0x1: slliw({{
                     Rd_sd = Rs1_sw << SHAMT5;
-                }});
+                }}, imm_type = uint64_t, imm_code = {{ imm = SHAMT5; }});
                 0x5: decode SRTYPE {
                     0x0: srliw({{
                         Rd_sd = (int32_t)(Rs1_uw >> SHAMT5);
-                    }});
+                    }}, imm_type = uint64_t, imm_code = {{ imm = SHAMT5; }});
                     0x1: sraiw({{
                         Rd_sd = Rs1_sw >> SHAMT5;
-                    }});
+                    }}, imm_type = uint64_t, imm_code = {{ imm = SHAMT5; }});
                 }
             }
         }
