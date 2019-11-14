@@ -36,6 +36,7 @@
 #include "base/types.hh"
 #include "cpu/static_inst.hh"
 #include "cpu/thread_context.hh"
+#include "debug/Disasm.hh"
 #include "debug/ExecEnable.hh"
 #include "params/ExeTracer.hh"
 #include "sim/insttracer.hh"
