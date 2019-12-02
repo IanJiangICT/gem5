@@ -293,8 +293,9 @@ class BaseCPU : public ClockedObject
 
   public:
 
-    // Log file of the disassembled instructions executed by the CPU
+    // Log files to save Simpoint assembly and functions
     std::ofstream simpoint_asm;
+    std::ofstream simpoint_c;
 
     /** Invalid or unknown Pid. Possible when operating system is not present
      *  or has not assigned a pid yet */

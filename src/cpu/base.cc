@@ -189,8 +189,16 @@ BaseCPU::BaseCPU(Params *p, bool is_checker)
     if (!simpoint_asm_path.empty()) {
         simpoint_asm.open(simpoint_asm_path);
         if (simpoint_asm.is_open()) {
-            std::cout << "Disassembling simpoint to ";
+            std::cout << "Output Simpoint assembly to ";
             std::cout << simpoint_asm_path << "." << std::endl;
+        }
+    }
+    std::string simpoint_c_path = p->simpoint_func_path.c_str();
+    if (!simpoint_c_path.empty()) {
+        simpoint_c.open(simpoint_c_path);
+        if (simpoint_c.is_open()) {
+            std::cout << "Output Simpoint fucntions to ";
+            std::cout << simpoint_c_path << "." << std::endl;
         }
     }
 
@@ -218,6 +226,7 @@ BaseCPU::~BaseCPU()
 {
     delete profileEvent;
     simpoint_asm.close();
+    simpoint_c.close();
 }
 
 void

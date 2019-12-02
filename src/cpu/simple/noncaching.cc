@@ -147,20 +147,6 @@ NonCachingSimpleCPU::dumpSimulatedPages()
                 phys_offset += MEM_PAGE_SIZE;
     }
     thread->getIsaPtr()->dumpPteGenEnd(this);
-
-    /* Dump one function for restoring heap memory pages. */
-    thread->getIsaPtr()->dumpMemBegin(this);
-    for (it = page_set.begin(); it != page_set.end(); ++it) {
-        page_addr = (*it).addr;
-                for (Addr offset = 0; offset < MEM_PAGE_SIZE; offset += 8) {
-            uint64_t value = *(uint64_t*)((uint8_t *)(*it).data + offset);
-            if (value == 0) {
-                continue;
-            }
-            thread->getIsaPtr()->dumpMemU64(this, page_addr + offset, value);
-        }
-    }
-    thread->getIsaPtr()->dumpMemEnd(this);
 }
 void
 NonCachingSimpleCPU::dumpSimulatedContexts()
