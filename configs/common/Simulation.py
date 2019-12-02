@@ -171,6 +171,8 @@ def findCptDir(options, cptdir, testsys):
             if options.enable_simpoint_slicing:
                 testsys.switch_cpus[0].simpoint_disassembly_path = \
                     joinpath(checkpoint_dir, "simpoint_slice.S")
+                testsys.switch_cpus[0].simpoint_func_path = \
+                    joinpath(checkpoint_dir, "simpoint_func.c")
 
         print("Resuming from SimPoint", end=' ')
         print("#%d, start_inst:%d, weight:%f, interval:%d, warmup:%d" %

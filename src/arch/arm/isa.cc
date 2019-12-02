@@ -2233,6 +2233,25 @@ ISA::dumpMiscRegStore(BaseCPU *cpu, ThreadContext *tc)
 
     cpu->simpoint_asm << "// TODO - Others" << std::endl;
     cpu->simpoint_asm << std::endl;
+    cpu->simpoint_asm << "/* Private data for Simpoint slice. */" << std::endl;
+    //cpu->simpoint_asm << ".section .data" << std::endl;
+    //cpu->simpoint_asm << ".balign 8" << std::endl;
+    cpu->simpoint_asm << "simpoint_private:" << std::endl;
+    cpu->simpoint_asm << "  .dword 0x0 /* Internal counter 0 */" << std::endl;
+    cpu->simpoint_asm << "  .dword 0x0 /* Internal counter 1 */" << std::endl;
+    cpu->simpoint_asm << "" << std::endl;
+    cpu->simpoint_asm << ".macro simpoint_chk2exit" << std::endl;
+    cpu->simpoint_asm << "  stp   x0, x1, [sp, #-16]!" << std::endl;
+    cpu->simpoint_asm << "  adrp   x0, simpoint_private" << std::endl;
+    cpu->simpoint_asm << "  add   x0, x0, :lo12:simpoint_private" << std::endl;
+    cpu->simpoint_asm << "  ldr   x1, [x0]" << std::endl;
+    cpu->simpoint_asm << "  sub   x1, x1, #1" << std::endl;
+    cpu->simpoint_asm << "  cmp   x1, xzr" << std::endl;
+    cpu->simpoint_asm << "  b.eq   simpoint_exit" << std::endl;
+    cpu->simpoint_asm << "  str   x1, [x0]" << std::endl;
+    cpu->simpoint_asm << "  ldp   x0, x1, [sp, #16]!" << std::endl;
+    cpu->simpoint_asm << ".endm" << std::endl;
+    cpu->simpoint_asm << std::endl;
 }
 
 void
@@ -2476,7 +2495,8 @@ ISA::dumpMemPagePrefix(BaseCPU *cpu, int page_cnt)
     cpu->simpoint_asm << ".section .SIMPOINT_MEM_PAGES" << std::endl;
     cpu->simpoint_asm << "/* Memory page begin @ 0x0000 */" << std::endl;
     cpu->simpoint_asm << ".balign 0x1000" << std::endl;
-    cpu->simpoint_asm << "simpoint_mem_page_0x0000:" << std::endl;
+    cpu->simpoint_asm << "simpoint_page_data_start:" << std::endl;
+    cpu->simpoint_asm << "simpoint_page_data_0x0000:" << std::endl;
     cpu->simpoint_asm << ".rept 0x1000" << std::endl;
     cpu->simpoint_asm << "   .byte 0x00" << std::endl;
     cpu->simpoint_asm << ".endr"<< std::endl;
@@ -2490,7 +2510,7 @@ ISA::dumpMemPageBegin(BaseCPU *cpu, Addr addr)
     cpu->simpoint_asm << "/* Memory page begin @ 0x" << addr << " */" \
                       << std::endl;
     cpu->simpoint_asm << ".balign 0x1000" << std::endl;
-    cpu->simpoint_asm << "simpoint_mem_page_0x" << addr << ":" << std::endl;
+    cpu->simpoint_asm << "simpoint_page_data_0x" << addr << ":" << std::endl;
     cpu->simpoint_asm << std::dec;
 }
 
@@ -2522,77 +2542,204 @@ ISA::dumpMemOneByte(BaseCPU *cpu, uint8_t data)
     cpu->simpoint_asm << std::dec;
 }
 
+#if 0
 void
 ISA::dumpPteGenBegin(BaseCPU *cpu, int page_cnt)
 {
-    cpu->simpoint_asm << "/*" << std::endl;
-    cpu->simpoint_asm << " * Generate PTE for memory pages." << std::endl;
-    cpu->simpoint_asm << " *   page count = " << page_cnt << std::endl;
-    cpu->simpoint_asm << " *" << std::endl;
-    cpu->simpoint_asm << " * Note:" << std::endl;
-    cpu->simpoint_asm << " *   The normal return i.e. a ret instruction is NOT"
-                      << " used here." << std::endl;
-    cpu->simpoint_asm << " *   Because we want to reserve all registers except"
-                      << " theses used in the two\n"
-                      << " *   macros create_pgd_entry and create_block_map."
-                      << std::endl;
-    cpu->simpoint_asm << " */" << std::endl;
-    cpu->simpoint_asm << std::endl;
-    cpu->simpoint_asm << "#include <target/paging.h>" << std::endl;
-    cpu->simpoint_asm << std::endl;
-    cpu->simpoint_asm << ".global simpoint_heap_map_entry" << std::endl;
-    cpu->simpoint_asm << ".section .text" << std::endl;
-    cpu->simpoint_asm << ".balign 4" << std::endl;
-    cpu->simpoint_asm << "simpoint_heap_map_entry:" << std::endl;
-    cpu->simpoint_asm << std::endl;
+    cpu->simpoint_c << "/*" << std::endl;
+    cpu->simpoint_c << " * Generate PTE for memory pages." << std::endl;
+    cpu->simpoint_c << " *   page count = " << page_cnt << std::endl;
+    cpu->simpoint_c << " */" << std::endl;
+    cpu->simpoint_c << std::endl;
+    cpu->simpoint_c << "#include <target/paging.h>" << std::endl;
+    cpu->simpoint_c << std::endl;
+    cpu->simpoint_c << "void simpoint_mem_map(pgd_t *pgdp)" << std::endl;
+    cpu->simpoint_c << "{" << std::endl;
+    cpu->simpoint_c << "    phys_addr_t phys_addr = 0;" << std::endl;
+    cpu->simpoint_c << std::endl;
 }
 
 void
 ISA::dumpPteGenEnd(BaseCPU *cpu)
 {
-    cpu->simpoint_asm << "   b simpoint_heap_map_exit" << std::endl;
-    cpu->simpoint_asm << std::endl;
+    cpu->simpoint_c << std::endl;
+    cpu->simpoint_c << "    return;" << std::endl;
+    cpu->simpoint_c << "}" << std::endl;
+    cpu->simpoint_c << std::endl;
 }
 
 void
 ISA::dumpPteGen(BaseCPU *cpu, Addr virt_addr, Addr phys_offset)
 {
-    cpu->simpoint_asm << std::hex;
-        cpu->simpoint_asm << "   mov	x0, x26" << std::endl;
-        cpu->simpoint_asm << "   ldr	x5, =0x" << virt_addr << std::endl;
-        cpu->simpoint_asm << "   create_pgd_entry x0, x5, x3, x6" << std::endl;
-        cpu->simpoint_asm << "   add	x6, x5, #PAGE_SIZE" << std::endl;
-        cpu->simpoint_asm << "   ldr	x3, =(simpoint_heap_start+0x" \
-                                          << phys_offset << ")" << std::endl;
-        cpu->simpoint_asm << "   create_block_map x0, x7, x3, x5, x6" \
-                                          << std::endl;
-    cpu->simpoint_asm << std::dec;
-    cpu->simpoint_asm << std::endl;
+    cpu->simpoint_c << std::hex;
+    cpu->simpoint_c << "    phys_addr = mem_alloc(PAGE_SIZE, PAGE_SIZE);"
+                    << std::endl;
+    cpu->simpoint_c << "    create_pgd_mapping(pgdp, phys_addr, 0x"
+                    << virt_addr << ", PAGE_SIZE, PAGE_KERNEL, false);"
+                    << std::endl;
+    cpu->simpoint_c << std::dec;
+}
+#endif
+
+void
+ISA::dumpPageDataPrefix(BaseCPU *cpu, int page_cnt)
+{
+    cpu->simpoint_c << "/*" << std::endl;
+    cpu->simpoint_c << " */" << std::endl;
+    cpu->simpoint_c << "#include <target/paging.h>" << std::endl;
+    cpu->simpoint_c << "phys_addr_t simpoint_dump_pages[" << page_cnt
+                    << "] = {0};" << std::endl;
 }
 
 void
+ISA::dumpPageDataBegin(BaseCPU *cpu, Addr addr)
+{
+    cpu->simpoint_c << std::hex;
+    cpu->simpoint_c << "/* Memory page begin @ 0x" << addr << " */" \
+                    << std::endl;
+    cpu->simpoint_c << "uint64_t simpoint_page_data_0x" << addr
+                    << "[]  __attribute__ ((aligned (PAGE_SIZE))) = {"
+                    << std::endl;
+    cpu->simpoint_c << std::dec;
+}
+
+void
+ISA::dumpPageDataEnd(BaseCPU *cpu, Addr addr)
+{
+    cpu->simpoint_c << std::hex;
+    cpu->simpoint_c << "}; /* Memory page end @ 0x" << addr << " */" \
+                      << std::endl;
+    cpu->simpoint_c << std::dec;
+    cpu->simpoint_c << std::endl;
+}
+
+void
+ISA::dumpPageDataU64(BaseCPU *cpu, uint64_t data)
+{
+    cpu->simpoint_c << std::hex;
+    cpu->simpoint_c << "   0x" << data << "," << std::endl;
+    cpu->simpoint_c << std::dec;
+}
+
+void
+ISA::dumpPagesAlloc(BaseCPU *cpu, int page_cnt)
+{
+    cpu->simpoint_c << "#include <target/paging.h>" << std::endl;
+    cpu->simpoint_c << std::endl;
+    cpu->simpoint_c << "phys_addr_t simpoint_new_pages[" << page_cnt
+                    << "] = {0};" << std::endl;
+    cpu->simpoint_c << "phys_addr_t *simpoint_pages_alloc(void)" << std::endl;
+    cpu->simpoint_c << "{" << std::endl;
+    cpu->simpoint_c << "    for (int i = 0; i < " << page_cnt << "; i++) {"
+                    << std::endl;
+    cpu->simpoint_c << "        simpoint_new_pages[i] = mem_alloc("
+                    << "PAGE_SIZE, PAGE_SIZE);" << std::endl;
+    cpu->simpoint_c << "        con_dbg(\"New page at 0x%lx\\n\", "
+                    << "simpoint_new_pages[i]);" << std::endl;
+    cpu->simpoint_c << "    }" << std::endl;
+    cpu->simpoint_c << "    return simpoint_new_pages;" << std::endl;
+    cpu->simpoint_c << "}" << std::endl;
+    cpu->simpoint_c << std::endl;
+}
+
+#if 0
+void
 ISA::dumpMemBegin(BaseCPU *cpu)
 {
-    cpu->simpoint_asm << ".section .text" << std::endl;
-    cpu->simpoint_asm << ".balign 4" << std::endl;
-    cpu->simpoint_asm << "simpoint_dump_memory_entry:" << std::endl;
+    cpu->simpoint_c << "void simpoint_mem_restore(void)" << std::endl;
+    cpu->simpoint_c << "{" << std::endl;
+    cpu->simpoint_c << "    uint64_t *addr = NULL;" << std::endl;
 }
 
 void
 ISA::dumpMemU64(BaseCPU *cpu, Addr addr, uint64_t value)
 {
-    cpu->simpoint_asm << std::hex;
-    cpu->simpoint_asm << "   ldr    x5, =0x" << addr << std::endl;
-    cpu->simpoint_asm << "   ldr    x6, =0x" << value << std::endl;
-    cpu->simpoint_asm << "   str    x6, [x5]" << std::endl;
-    cpu->simpoint_asm << std::dec;
+    cpu->simpoint_c << std::hex;
+    cpu->simpoint_c << "    addr = (uint64_t *)0x" << addr << ";";
+    cpu->simpoint_c << "    *addr = 0x" << value << ";" << std::endl;
+    cpu->simpoint_c << std::dec;
 }
 
 void
 ISA::dumpMemEnd(BaseCPU *cpu)
 {
-    cpu->simpoint_asm << "   b simpoint_dump_memory_exit" << std::endl;
-    cpu->simpoint_asm << std::endl;
+    cpu->simpoint_c << "    return;" << std::endl;
+    cpu->simpoint_c << "}" << std::endl;
+    cpu->simpoint_c << std::endl;
+}
+#endif
+
+void
+ISA::dumpPagesMapBegin(BaseCPU *cpu)
+{
+    cpu->simpoint_c << "#include <target/paging.h>" << std::endl;
+    cpu->simpoint_c << std::endl;
+    cpu->simpoint_c << "void simpoint_pages_map(pgd_t *pgdp, "
+                    << "phys_addr_t *pages_list)" << std::endl;
+    cpu->simpoint_c << "{" << std::endl;
+}
+
+void
+ISA::dumpPagesMapOne(BaseCPU *cpu, int page_index, Addr addr)
+{
+    cpu->simpoint_c << "    con_dbg(\"Maping page PA = 0x%lx, VA = 0x"
+                    << std::hex << addr << std::dec << "\\n\", pages_list["
+                    << page_index << "]);" << std::endl;
+    cpu->simpoint_c << "    create_pgd_mapping(pgdp, pages_list["
+                    << page_index << "], 0x"
+                    << std::hex << addr << std::dec
+                    << ", PAGE_SIZE, PAGE_KERNEL, false);" << std::endl;
+}
+
+void
+ISA::dumpPagesMapEnd(BaseCPU *cpu)
+{
+    cpu->simpoint_c << "}" << std::endl;
+    cpu->simpoint_c << std::endl;
+}
+
+void
+ISA::dumpMemInfoBegin(BaseCPU *cpu)
+{
+    cpu->simpoint_c << "/*" << std::endl;
+    cpu->simpoint_c << " * Storage for address-value pairs." << std::endl;
+    cpu->simpoint_c << " */" << std::endl;
+    cpu->simpoint_c << std::endl;
+    cpu->simpoint_c << "#include <stdint.h>" << std::endl;
+    cpu->simpoint_c << std::endl;
+    cpu->simpoint_c << "static uint64_t simpoint_mem_info[] = {" << std::endl;
+}
+
+void
+ISA::dumpMemInfoU64(BaseCPU *cpu, Addr addr, uint64_t value)
+{
+    cpu->simpoint_c << std::hex;
+    cpu->simpoint_c << "   0x" << addr << ", 0x" << value << "," << std::endl;
+    cpu->simpoint_c << std::dec;
+}
+
+void
+ISA::dumpMemInfoEnd(BaseCPU *cpu)
+{
+    cpu->simpoint_c << "};" << std::endl;
+    cpu->simpoint_c << std::endl;
+}
+
+void
+ISA::dumpMemInfoRestore(BaseCPU *cpu, int page_cnt)
+{
+    cpu->simpoint_c << "void simpoint_mem_restore(void)" << std::endl;
+    cpu->simpoint_c << "{" << std::endl;
+    cpu->simpoint_c << "    uint64_t *ptr = simpoint_mem_info;"
+                    << std::endl;
+    cpu->simpoint_c << "    for (int i = 0; i < " << page_cnt << "; i++) {"
+                    << std::endl;
+    cpu->simpoint_c << "        uint64_t *addr = (uint64_t *)ptr[i*2];"
+                    << std::endl;
+    cpu->simpoint_c << "        uint64_t value = ptr[i*2+1];" << std::endl;
+    cpu->simpoint_c << "        *addr = value;" << std::endl;
+    cpu->simpoint_c << "    }" << std::endl;
+    cpu->simpoint_c << "}" << std::endl;
 }
 
 void
@@ -2611,9 +2758,6 @@ ISA::dumpSimpointInit(BaseCPU *cpu)
     cpu->simpoint_asm << "   // XXX Run b NegXSRegCc in gdb." << std::endl;
     cpu->simpoint_asm << "   NEGS W0, W1, ASR #4" << std::endl;
     cpu->simpoint_asm << std::endl;
-
-    cpu->simpoint_asm << "   b simpoint_dump_memory_entry" << std::endl;
-    cpu->simpoint_asm << "simpoint_dump_memory_exit:" << std::endl;
     cpu->simpoint_asm << std::endl;
 }
 

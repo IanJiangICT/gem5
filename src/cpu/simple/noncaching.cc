@@ -107,61 +107,72 @@ NonCachingSimpleCPU::dumpSimulatedPages()
         page_set.insert(curr_page);
     }
 
-    /* Dump pages in the order of address growth. */
+    /* Dump address-value pairs in the order of address growth. */
     SimpleExecContext &t_info = *threadInfo[curThread];
     SimpleThread* thread = t_info.thread;
     std::set<MemPage>::iterator it;
-    thread->getIsaPtr()->dumpMemPagePrefix(this, page_set.size());
+    thread->getIsaPtr()->dumpMemInfoBegin(this);
+    int mem_info_cnt = 0;
     for (it = page_set.begin(); it != page_set.end(); ++it) {
         page_addr = (*it).addr;
         page_data_buf = (uint8_t *)(*it).data;
-        thread->getIsaPtr()->dumpMemPageBegin(this, page_addr);
         int i = 0;
-        int zero_byte_cnt = 0;
         do {
-            if (page_data_buf[i] != 0) {
-                zero_byte_cnt = 0;
-                thread->getIsaPtr()->dumpMemOneByte(this, page_data_buf[i]);
-                i++;
-                continue;
+            uint64_t mem_value = *(uint64_t *)(page_data_buf + i);
+            Addr mem_addr = page_addr + i;
+            if (mem_value != 0) {
+                thread->getIsaPtr()->dumpMemInfoU64(this, mem_addr, mem_value);
+                mem_info_cnt++;
             }
-            zero_byte_cnt = 1;
-            while (i + zero_byte_cnt < MEM_PAGE_SIZE) {
-                if (page_data_buf[i + zero_byte_cnt] == 0)
-                    zero_byte_cnt++;
-                else
-                    break;
-            }
-            thread->getIsaPtr()->dumpMemZeroBytes(this, zero_byte_cnt);
-            i += zero_byte_cnt;
+            i += sizeof(mem_value);;
         } while (i < MEM_PAGE_SIZE);
-        thread->getIsaPtr()->dumpMemPageEnd(this, page_addr);
     }
+    thread->getIsaPtr()->dumpMemInfoEnd(this);
 
+    thread->getIsaPtr()->dumpPageDataPrefix(this, page_set.size());
+    for (it = page_set.begin(); it != page_set.end(); ++it) {
+        page_addr = (*it).addr;
+        page_data_buf = (uint8_t *)(*it).data;
+        thread->getIsaPtr()->dumpPageDataBegin(this, page_addr);
+        int i = 0;
+        do {
+            uint64_t mem_value = *(uint64_t *)(page_data_buf + i);
+            thread->getIsaPtr()->dumpPageDataU64(this, mem_value);
+            i += sizeof(mem_value);;
+        } while (i < MEM_PAGE_SIZE);
+        thread->getIsaPtr()->dumpPageDataEnd(this, page_addr);
+    }
+#if 0
     /* Dump one fucntion for generating page table entry for all pages. */
-    Addr phys_offset = 0;
     thread->getIsaPtr()->dumpPteGenBegin(this, page_set.size());
+    Addr phys_offset = 0;
     for (it = page_set.begin(); it != page_set.end(); ++it) {
         page_addr = (*it).addr;
         thread->getIsaPtr()->dumpPteGen(this, page_addr, phys_offset);
-                phys_offset += MEM_PAGE_SIZE;
+        phys_offset += MEM_PAGE_SIZE;
     }
     thread->getIsaPtr()->dumpPteGenEnd(this);
+#endif
 
-    /* Dump one function for restoring heap memory pages. */
-    thread->getIsaPtr()->dumpMemBegin(this);
+    thread->getIsaPtr()->dumpPagesAlloc(this, page_set.size());
+
+#if 0
+    thread->getIsaPtr()->dumpPagesMap(this, page_set.size());
+#else
+    thread->getIsaPtr()->dumpPagesMapBegin(this);
+    int page_index = 0;
     for (it = page_set.begin(); it != page_set.end(); ++it) {
         page_addr = (*it).addr;
-                for (Addr offset = 0; offset < MEM_PAGE_SIZE; offset += 8) {
-            uint64_t value = *(uint64_t*)((uint8_t *)(*it).data + offset);
-            if (value == 0) {
-                continue;
-            }
-            thread->getIsaPtr()->dumpMemU64(this, page_addr + offset, value);
-        }
+        thread->getIsaPtr()->dumpPagesMapOne(this, page_index, page_addr);
+        page_index++;
     }
-    thread->getIsaPtr()->dumpMemEnd(this);
+    thread->getIsaPtr()->dumpPagesMapEnd(this);
+#endif
+
+    /* Dump one fucntion for restoring all address-value pairs. */
+    thread->getIsaPtr()->dumpMemInfoRestore(this, mem_info_cnt);
 }
+
 void
 NonCachingSimpleCPU::dumpSimulatedContexts()
 {

@@ -186,6 +186,8 @@ class BaseCPU(ClockedObject):
         "starting instruction counts of simpoints")
     simpoint_disassembly_path = Param.String("",
         "Path to save simpoint disassembly")
+    simpoint_func_path = Param.String("",
+        "Path to save simpoint functions")
     progress_interval = Param.Frequency('0Hz',
         "frequency to print out the progress message")
 
