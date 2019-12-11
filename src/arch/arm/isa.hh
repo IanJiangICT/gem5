@@ -747,7 +747,7 @@ namespace ArmISA
             bool (*__readMem)(BaseCPU *cpu, Addr, uint8_t *, unsigned,
                               Request::Flags flags));
         void dumpLR(BaseCPU *cpu, ThreadContext *tc, Addr lr);
-        void dumpStackedFP(BaseCPU *cpu, ThreadContext *tc);
+        void dumpStackedFP(BaseCPU *cpu, ThreadContext *tc, Addr fp);
         void dumpStackedLR(BaseCPU *cpu, ThreadContext *tc, Addr lr);
         void dumpStacked(BaseCPU *cpu, ThreadContext *tc, uint64_t data);
         void dumpMiscReg(BaseCPU *cpu, ThreadContext *tc, RegIndex idx);

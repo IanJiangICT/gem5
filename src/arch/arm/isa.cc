@@ -2302,12 +2302,14 @@ ISA::dumpLR(BaseCPU *cpu, ThreadContext *tc, Addr lr)
 }
 
 void
-ISA::dumpStackedFP(BaseCPU *cpu, ThreadContext *tc)
+ISA::dumpStackedFP(BaseCPU *cpu, ThreadContext *tc, Addr fp)
 {
+    cpu->simpoint_asm << "# FP = 0x"
+                      << std::hex << fp << std::dec << std::endl;
     cpu->simpoint_asm << "  mov   x9, sp" << std::endl;
     //cpu->simpoint_asm << "  str   x29, [x9], #-8" << std::endl;
     cpu->simpoint_asm << "  str   x29, [x9, #-8]!" << std::endl;
-    cpu->simpoint_asm << "  mov   x29, sp" << std::endl;
+    cpu->simpoint_asm << "  mov   x29, x9" << std::endl;
     cpu->simpoint_asm << "  mov   sp, x9" << std::endl;
 }
 
@@ -2323,6 +2325,8 @@ ISA::dumpStackedLR(BaseCPU *cpu, ThreadContext *tc, Addr lr)
         if (symtab->findNearestSymbol(lr, sym_str, addr))
             cpu->markExecuted(addr);
         if (symtab->findLabel(lr, sym_str)) {
+            cpu->simpoint_asm << "# LR = 0x"
+                              << std::hex << lr << std::dec << std::endl;
             cpu->simpoint_asm << "  adr   x10, " << sym_str << std::endl;
             cpu->simpoint_asm << "  mov   x9, sp" << std::endl;
             //cpu->simpoint_asm << "  str   x10, [x9], #-8" << std::endl;
@@ -2336,6 +2340,8 @@ ISA::dumpStackedLR(BaseCPU *cpu, ThreadContext *tc, Addr lr)
 void
 ISA::dumpStacked(BaseCPU *cpu, ThreadContext *tc, uint64_t data)
 {
+    cpu->simpoint_asm << "# Data = 0x"
+                      << std::hex << data << std::dec << std::endl;
     cpu->simpoint_asm << "  ldr   x10, =0x" << std::hex << data << std::dec \
                       << std::endl;
     cpu->simpoint_asm << "  mov   x9, sp" << std::endl;
@@ -2455,7 +2461,7 @@ ISA::dumpStackLoad(BaseCPU *cpu, ThreadContext *tc)
     while (!ss.empty()) {
         if ((!fp_idx_queue.empty()) && \
             (fp_idx_queue.top() == stack_depth - i - 8)) {
-            dumpStackedFP(cpu, tc);
+            dumpStackedFP(cpu, tc, ss.top());
             fp_idx_queue.pop();
         } else if ((!lr_idx_queue.empty()) && \
                    (lr_idx_queue.top() == stack_depth - i - 8)) {
