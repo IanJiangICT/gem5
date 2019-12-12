@@ -2233,25 +2233,6 @@ ISA::dumpMiscRegStore(BaseCPU *cpu, ThreadContext *tc)
 
     cpu->simpoint_asm << "// TODO - Others" << std::endl;
     cpu->simpoint_asm << std::endl;
-    cpu->simpoint_asm << "/* Private data for Simpoint slice. */" << std::endl;
-    //cpu->simpoint_asm << ".section .data" << std::endl;
-    //cpu->simpoint_asm << ".balign 8" << std::endl;
-    cpu->simpoint_asm << "simpoint_private:" << std::endl;
-    cpu->simpoint_asm << "  .dword 0x0 /* Internal counter 0 */" << std::endl;
-    cpu->simpoint_asm << "  .dword 0x0 /* Internal counter 1 */" << std::endl;
-    cpu->simpoint_asm << "" << std::endl;
-    cpu->simpoint_asm << ".macro simpoint_chk2exit" << std::endl;
-    cpu->simpoint_asm << "  stp   x0, x1, [sp, #-16]!" << std::endl;
-    cpu->simpoint_asm << "  adrp   x0, simpoint_private" << std::endl;
-    cpu->simpoint_asm << "  add   x0, x0, :lo12:simpoint_private" << std::endl;
-    cpu->simpoint_asm << "  ldr   x1, [x0]" << std::endl;
-    cpu->simpoint_asm << "  sub   x1, x1, #1" << std::endl;
-    cpu->simpoint_asm << "  cmp   x1, xzr" << std::endl;
-    cpu->simpoint_asm << "  b.eq   simpoint_exit" << std::endl;
-    cpu->simpoint_asm << "  str   x1, [x0]" << std::endl;
-    cpu->simpoint_asm << "  ldp   x0, x1, [sp, #16]!" << std::endl;
-    cpu->simpoint_asm << ".endm" << std::endl;
-    cpu->simpoint_asm << std::endl;
 }
 
 void
@@ -2751,7 +2732,34 @@ ISA::dumpMemInfoRestore(BaseCPU *cpu, int page_cnt)
 void
 ISA::dumpSimpointInit(BaseCPU *cpu)
 {
-    cpu->simpoint_asm << "/* Begin of SimPoint */" << std::endl;
+    cpu->simpoint_c << "/*" << std::endl;
+    cpu->simpoint_c << " * Private data for Simpoint" << std::endl;
+    cpu->simpoint_c << " */" << std::endl;
+    cpu->simpoint_c << "#include <stdint.h>" << std::endl;
+    cpu->simpoint_c << "/* Counter used in simpoint_chk2exit */" << std::endl;
+    cpu->simpoint_c << "uint64_t simpoint_exit_cnt = 1;" << std::endl;
+    cpu->simpoint_c << std::endl;
+
+    cpu->simpoint_asm << "/*" << std::endl;
+    cpu->simpoint_asm << " * Macro functions" << std::endl;
+    cpu->simpoint_asm << " */" << std::endl;
+    cpu->simpoint_asm << ".macro simpoint_chk2exit" << std::endl;
+    cpu->simpoint_asm << "  stp   x0, x1, [sp, #-16]!" << std::endl;
+    cpu->simpoint_asm << "  adrp   x0, simpoint_exit_cnt" << std::endl;
+    cpu->simpoint_asm << "  add   x0, x0, :lo12:simpoint_exit_cnt"
+                      << std::endl;
+    cpu->simpoint_asm << "  ldr   x1, [x0]" << std::endl;
+    cpu->simpoint_asm << "  sub   x1, x1, #1" << std::endl;
+    cpu->simpoint_asm << "  cmp   x1, xzr" << std::endl;
+    cpu->simpoint_asm << "  b.eq   simpoint_exit" << std::endl;
+    cpu->simpoint_asm << "  str   x1, [x0]" << std::endl;
+    cpu->simpoint_asm << "  ldp   x0, x1, [sp, #16]!" << std::endl;
+    cpu->simpoint_asm << ".endm" << std::endl;
+
+    cpu->simpoint_asm << std::endl;
+    cpu->simpoint_asm << "/*" << std::endl;
+    cpu->simpoint_asm << " * SimPoint initialization entry" << std::endl;
+    cpu->simpoint_asm << " */" << std::endl;
     cpu->simpoint_asm << ".global simpoint_entry" << std::endl;
     cpu->simpoint_asm << ".section .text" << std::endl;
     cpu->simpoint_asm << ".balign 4" << std::endl;
@@ -2773,8 +2781,12 @@ ISA::dumpSimpointExit(BaseCPU *cpu)
     cpu->simpoint_asm << "/* End of SimPoint */" << std::endl;
     cpu->simpoint_asm << "simpoint_exit:" << std::endl;
     cpu->simpoint_asm << "exit:" << std::endl;
+    // Insert one special instruction NEGS to help debugging.
+    cpu->simpoint_asm << "   // XXX Flag for locating." << std::endl;
+    cpu->simpoint_asm << "   NEGS W1, W0, ASR #4" << std::endl;
+    cpu->simpoint_asm << "simpoint_exit_loop:" << std::endl;
     cpu->simpoint_asm << "  nop" << std::endl;
-    cpu->simpoint_asm << "  b     simpoint_exit" << std::endl;
+    cpu->simpoint_asm << "  b     simpoint_exit_loop" << std::endl;
     cpu->simpoint_asm << std::endl;
 }
 
