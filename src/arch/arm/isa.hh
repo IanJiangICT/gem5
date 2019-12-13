@@ -761,6 +761,7 @@ namespace ArmISA
         void dumpMemPagePrefix(BaseCPU *cpu, int page_cnt);
         void dumpMemPageBegin(BaseCPU *cpu, Addr addr);
         void dumpMemPageEnd(BaseCPU *cpu, Addr addr);
+        void dumpMemPagePostfix(BaseCPU *cpu);
         void dumpMemZeroBytes(BaseCPU *cpu, Addr size);
         void dumpMemOneByte(BaseCPU *cpu, uint8_t data);
 
@@ -768,16 +769,25 @@ namespace ArmISA
         //void dumpPteGen(BaseCPU *cpu, Addr virt_addr, Addr phys_offset);
         //void dumpPteGenEnd(BaseCPU *cpu);
 
-        void dumpPageDataPrefix(BaseCPU *cpu, int page_cnt);
-        void dumpPageDataBegin(BaseCPU *cpu, Addr addr);
-        void dumpPageDataEnd(BaseCPU *cpu, Addr addr);
-        void dumpPageDataU64(BaseCPU *cpu, uint64_t data);
+        //void dumpPageDataPrefix(BaseCPU *cpu, int page_cnt);
+        //void dumpPageDataBegin(BaseCPU *cpu, Addr addr);
+        //void dumpPageDataEnd(BaseCPU *cpu, Addr addr);
+        //void dumpPageDataU64(BaseCPU *cpu, uint64_t data);
+
+        void dumpPageArrayBegin(BaseCPU *cpu, int page_cnt);
+        void dumpPageArrayEnd(BaseCPU *cpu);
+        void dumpPageArrayU64(BaseCPU *cpu, uint64_t data);
 
         //void dumpMemBegin(BaseCPU *cpu);
         //void dumpMemU64(BaseCPU *cpu, Addr addr, uint64_t value);
         //void dumpMemEnd(BaseCPU *cpu);
 
         void dumpPagesAlloc(BaseCPU *cpu, int page_cnt);
+
+        void dumpPagesDump(BaseCPU *cpu, int page_cnt);
+        void dumpPagesDumpBegin(BaseCPU *cpu, int page_cnt);
+        void dumpPagesDumpEnd(BaseCPU *cpu);
+        void dumpPagesDumpOne(BaseCPU *cpu, int i, Addr addr);
 
         void dumpPagesMapBegin(BaseCPU *cpu);
         void dumpPagesMapEnd(BaseCPU *cpu);

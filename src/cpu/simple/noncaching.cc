@@ -85,6 +85,7 @@ NonCachingSimpleCPU::dumpSimulatedPages()
     uint8_t *page_data_buf = NULL;
     std::set<MemPage>::iterator page_it;
     std::pair<std::set<MemPage>::iterator, bool> ret;
+    int page_index = 0;
 
     /* Merge memory reads and writes into a page set.
        If one position in page is read more than once, then the value of the
@@ -107,10 +108,41 @@ NonCachingSimpleCPU::dumpSimulatedPages()
         page_set.insert(curr_page);
     }
 
-    /* Dump address-value pairs in the order of address growth. */
     SimpleExecContext &t_info = *threadInfo[curThread];
     SimpleThread* thread = t_info.thread;
     std::set<MemPage>::iterator it;
+#if 0
+    /* Dump pages in the order of address growth. */
+    thread->getIsaPtr()->dumpMemPagePrefix(this, page_set.size());
+    for (it = page_set.begin(); it != page_set.end(); ++it) {
+        page_addr = (*it).addr;
+        page_data_buf = (uint8_t *)(*it).data;
+        thread->getIsaPtr()->dumpMemPageBegin(this, page_addr);
+        int i = 0;
+        int zero_byte_cnt = 0;
+        do {
+            if (page_data_buf[i] != 0) {
+                zero_byte_cnt = 0;
+                thread->getIsaPtr()->dumpMemOneByte(this, page_data_buf[i]);
+                i++;
+                continue;
+            }
+            zero_byte_cnt = 1;
+            while (i + zero_byte_cnt < MEM_PAGE_SIZE) {
+                if (page_data_buf[i + zero_byte_cnt] == 0)
+                    zero_byte_cnt++;
+                else
+                    break;
+            }
+            thread->getIsaPtr()->dumpMemZeroBytes(this, zero_byte_cnt);
+            i += zero_byte_cnt;
+        } while (i < MEM_PAGE_SIZE);
+        thread->getIsaPtr()->dumpMemPageEnd(this, page_addr);
+    }
+    thread->getIsaPtr()->dumpMemPagePostfix(this);
+#endif
+
+    /* Dump address-value pairs in the order of address growth. */
     thread->getIsaPtr()->dumpMemInfoBegin(this);
     int mem_info_cnt = 0;
     for (it = page_set.begin(); it != page_set.end(); ++it) {
@@ -128,7 +160,7 @@ NonCachingSimpleCPU::dumpSimulatedPages()
         } while (i < MEM_PAGE_SIZE);
     }
     thread->getIsaPtr()->dumpMemInfoEnd(this);
-
+#if 0
     thread->getIsaPtr()->dumpPageDataPrefix(this, page_set.size());
     for (it = page_set.begin(); it != page_set.end(); ++it) {
         page_addr = (*it).addr;
@@ -142,25 +174,38 @@ NonCachingSimpleCPU::dumpSimulatedPages()
         } while (i < MEM_PAGE_SIZE);
         thread->getIsaPtr()->dumpPageDataEnd(this, page_addr);
     }
-#if 0
-    /* Dump one fucntion for generating page table entry for all pages. */
-    thread->getIsaPtr()->dumpPteGenBegin(this, page_set.size());
-    Addr phys_offset = 0;
+#else
+    thread->getIsaPtr()->dumpPageArrayBegin(this, page_set.size());
     for (it = page_set.begin(); it != page_set.end(); ++it) {
-        page_addr = (*it).addr;
-        thread->getIsaPtr()->dumpPteGen(this, page_addr, phys_offset);
-        phys_offset += MEM_PAGE_SIZE;
+        page_data_buf = (uint8_t *)(*it).data;
+        int i = 0;
+        do {
+            uint64_t mem_value = *(uint64_t *)(page_data_buf + i);
+            thread->getIsaPtr()->dumpPageArrayU64(this, mem_value);
+            i += sizeof(mem_value);;
+        } while (i < MEM_PAGE_SIZE);
     }
-    thread->getIsaPtr()->dumpPteGenEnd(this);
+    thread->getIsaPtr()->dumpPageArrayEnd(this);
 #endif
 
     thread->getIsaPtr()->dumpPagesAlloc(this, page_set.size());
+
+#if 1
+    thread->getIsaPtr()->dumpPagesDump(this, page_set.size());
+#else
+    thread->getIsaPtr()->dumpPagesDumpBegin(this, page_set.size());
+    for (it = page_set.begin(); it != page_set.end(); ++it) {
+        page_addr = (*it).addr;
+        thread->getIsaPtr()->dumpPagesDumpOne(this, page_index, page_addr);
+        page_index++;
+    }
+    thread->getIsaPtr()->dumpPagesDumpEnd(this);
+#endif
 
 #if 0
     thread->getIsaPtr()->dumpPagesMap(this, page_set.size());
 #else
     thread->getIsaPtr()->dumpPagesMapBegin(this);
-    int page_index = 0;
     for (it = page_set.begin(); it != page_set.end(); ++it) {
         page_addr = (*it).addr;
         thread->getIsaPtr()->dumpPagesMapOne(this, page_index, page_addr);
