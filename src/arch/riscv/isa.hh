@@ -89,6 +89,11 @@ class ISA : public BaseISA
     int flattenCCIndex(int reg) const { return reg; }
     int flattenMiscIndex(int reg) const { return reg; }
 
+    void dumpSimpointInit(BaseCPU *cpu);
+    void dumpSimpointExit(BaseCPU *cpu);
+    void dumpSimpointStart(BaseCPU *cpu);
+    void dumpSimpointStop(BaseCPU *cpu);
+
     void startup(ThreadContext *tc) {}
 
     /// Explicitly import the otherwise hidden startup

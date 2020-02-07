@@ -120,6 +120,34 @@ class RiscvMicroInst : public RiscvStaticInst
     void advancePC(PCState &pcState) const override;
 };
 
+class RiscvStaticInstEncoder : public RiscvStaticInst
+{
+  public:
+    RiscvStaticInstEncoder(ExtMachInst emi)
+        : RiscvStaticInst("asm", emi, No_OpClass)
+    {}
+
+    Fault
+    execute(ExecContext *xc, Trace::InstRecord *traceData) const override
+    {
+        return NoFault;
+    }
+
+    void
+    advancePC(TheISA::PCState &pcState) const override
+    {
+        pcState.advance();
+    }
+
+    std::string
+    generateDisassembly(Addr pc, const SymbolTable *symtab) const override
+    {
+        return mnemonic;
+    }
+
+  private:
+};
+
 }
 
 #endif // __ARCH_RISCV_STATIC_INST_HH__

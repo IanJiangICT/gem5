@@ -30,12 +30,19 @@
 #ifndef __ARCH_GENERIC_ISA_HH__
 #define __ARCH_GENERIC_ISA_HH__
 
+#include "params/BaseCPU.hh"
 #include "sim/sim_object.hh"
 
 class BaseISA : public SimObject
 {
   protected:
     using SimObject::SimObject;
+
+  public:
+    virtual void dumpSimpointInit(BaseCPU *cpu);
+    virtual void dumpSimpointExit(BaseCPU *cpu);
+    virtual void dumpSimpointStart(BaseCPU *cpu);
+    virtual void dumpSimpointStop(BaseCPU *cpu);
 };
 
 #endif // __ARCH_GENERIC_ISA_HH__
