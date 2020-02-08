@@ -190,6 +190,9 @@ def template BranchDeclare {{
         branchTarget(const RiscvISA::PCState &branchPC) const override;
 
         using StaticInst::branchTarget;
+
+        bool markTarget(ThreadContext *tc, Addr pc,
+                        Addr &target, SymbolTable *symtab);
     };
 }};
 
@@ -229,6 +232,16 @@ def template BranchExecute {{
         ss << imm;
         return ss.str();
     }
+
+    bool
+    %(class_name)s::markTarget(ThreadContext *tc, Addr pc,
+                               Addr &target, SymbolTable *symtab)
+    {
+        target = pc + imm;
+        if (symtab)
+            symtab->insert_target(target);
+        return true;
+    }
 }};
 
 def template JumpDeclare {{
@@ -249,6 +262,9 @@ def template JumpDeclare {{
         branchTarget(ThreadContext *tc) const override;
 
         using StaticInst::branchTarget;
+
+        bool markTarget(ThreadContext *tc, Addr pc,
+                        Addr &target, SymbolTable *symtab);
     };
 }};
 
@@ -288,6 +304,17 @@ def template JumpExecute {{
         ss << registerName(indices[0]);
         return ss.str();
     }
+
+    bool
+    %(class_name)s::markTarget(ThreadContext *tc, Addr pc,
+                               Addr &target, SymbolTable *symtab)
+    {
+        target = (tc->readIntReg(_srcRegIdx[0].index()) + imm)&~0x1;
+        if (symtab)
+            symtab->insert_target(target);
+        return true;
+    }
+
 }};
 
 def template CSRExecute {{
