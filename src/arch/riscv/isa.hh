@@ -75,6 +75,11 @@ class ISA : public BaseISA
 
     bool hpmCounterEnabled(int counter) const;
 
+    void dumpGenRegStore(BaseCPU *cpu, ThreadContext *tc);
+    void dumpGenRegLoad(BaseCPU *cpu, ThreadContext *tc);
+    void dumpMiscRegStore(BaseCPU *cpu, ThreadContext *tc);
+    void dumpMiscRegLoad(BaseCPU *cpu, ThreadContext *tc);
+
   public:
     typedef RiscvISAParams Params;
 
@@ -102,6 +107,13 @@ class ISA : public BaseISA
 
     void serialize(CheckpointOut &cp) const;
     void unserialize(CheckpointIn &cp);
+
+    void dumpSimPointInit(BaseCPU *cpu, ThreadContext *tc,
+        bool (*__readMem)(BaseCPU *cpu, Addr, uint8_t *, unsigned,
+                          Request::Flags));
+    void dumpSimPointExit(BaseCPU *cpu, ThreadContext *tc);
+    void dumpSimPointStart(BaseCPU *cpu, ThreadContext *tc);
+    void dumpSimPointStop(BaseCPU *cpu, ThreadContext *tc);
 
     /// Explicitly import the otherwise hidden startup
     using BaseISA::startup;

@@ -410,6 +410,117 @@ ISA::unserialize(CheckpointIn &cp)
     UNSERIALIZE_CONTAINER(miscRegFile);
 }
 
+void
+ISA::dumpSimPointInit(BaseCPU *cpu, ThreadContext *tc,
+    bool (*__readMem)(BaseCPU *cpu, Addr, uint8_t *, unsigned,
+                      Request::Flags))
+{
+    dumpGenRegStore(cpu, tc);
+    cpu->simpoint_asm << std::endl;
+    cpu->simpoint_asm << "/*" << std::endl;
+    cpu->simpoint_asm << " * SimPoint Init entry" << std::endl;
+    cpu->simpoint_asm << " */" << std::endl;
+
+    dumpGenRegLoad(cpu, tc);
+
+    cpu->simpoint_asm << std::endl;
+}
+
+void
+ISA::dumpSimPointExit(BaseCPU *cpu, ThreadContext *tc)
+{
+    cpu->simpoint_asm << "/*" << std::endl;
+    cpu->simpoint_asm << " * SimPoint Exit" << std::endl;
+    cpu->simpoint_asm << " */" << std::endl;
+    cpu->simpoint_asm << std::endl;
+}
+
+void
+ISA::dumpSimPointStart(BaseCPU *cpu, ThreadContext *tc)
+{
+    cpu->simpoint_asm << "/*" << std::endl;
+    cpu->simpoint_asm << " * SimPoint Start" << std::endl;
+    cpu->simpoint_asm << " */" << std::endl;
+    cpu->simpoint_asm << std::endl;
+}
+
+void
+ISA::dumpSimPointStop(BaseCPU *cpu, ThreadContext *tc)
+{
+    cpu->simpoint_asm << "/*" << std::endl;
+    cpu->simpoint_asm << " * SimPoint Stop" << std::endl;
+    cpu->simpoint_asm << " */" << std::endl;
+    cpu->simpoint_asm << std::endl;
+}
+
+void
+ISA::dumpGenRegStore(BaseCPU *cpu, ThreadContext *tc)
+{
+    int i = 0;
+    cpu->simpoint_asm << ".section .rodata" << std::endl;
+    cpu->simpoint_asm << ".balign 8" << std::endl;
+    cpu->simpoint_asm << "/*" << std::endl;
+    cpu->simpoint_asm << " * Storage for general-purpose risgisters"
+                      << std::endl;
+    cpu->simpoint_asm << " */" << std::endl;
+    cpu->simpoint_asm << "/* Integer */" << std::endl;
+    cpu->simpoint_asm << "simpoint_gen_reg_int:" << std::endl;
+    for (i = 0; i < NumIntArchRegs; i++) {
+        RegVal val = tc->readIntReg(i);
+        cpu->simpoint_asm << "    .dword 0x" << std::hex << val << std::dec
+                          << std::endl;
+    }
+    cpu->simpoint_asm << "/* TODO - Float */" << std::endl;
+    cpu->simpoint_asm << std::endl;
+}
+
+void
+ISA::dumpGenRegLoad(BaseCPU *cpu, ThreadContext *tc)
+{
+    int i = 0;
+    cpu->simpoint_asm << "/* Restore general-purpose risgisters. */"
+                      << std::endl;
+    cpu->simpoint_asm << "/* - Integer" << std::endl;
+    cpu->simpoint_asm << " *   Exclude zero, ra, sp and fp" << std::endl;
+    cpu->simpoint_asm << " *             X0, X1, X2 and X8" << std::endl;
+    cpu->simpoint_asm << " *   Use ra temporarily as base register."
+                      << std::endl;
+    cpu->simpoint_asm << " */" << std::endl;
+    cpu->simpoint_asm << "    la ra, simpoint_gen_reg_int"
+                      << std::endl;
+
+    for (i = 0; i < 32; i++) {
+        if (i == 0) continue;
+        if (i == 1) continue;
+        if (i == 2) continue;
+        if (i == 8) continue;
+        cpu->simpoint_asm << "    ld x" <<  i << ", " << (i*8) << "(ra)"
+                          << std::endl;
+    }
+    cpu->simpoint_asm << "// TODO - Float" << std::endl;
+    cpu->simpoint_asm << std::endl;
+}
+
+void
+ISA::dumpMiscRegStore(BaseCPU *cpu, ThreadContext *tc)
+{
+    cpu->simpoint_asm << "/*" << std::endl;
+    cpu->simpoint_asm << " * Storage for miscellaneous risgisters"
+                      << std::endl;
+    cpu->simpoint_asm << " */" << std::endl;
+    cpu->simpoint_asm << "// TODO - Others" << std::endl;
+    cpu->simpoint_asm << std::endl;
+}
+
+void
+ISA::dumpMiscRegLoad(BaseCPU *cpu, ThreadContext *tc)
+{
+    cpu->simpoint_asm << "/* Restore miscellaneous risgisters. */" \
+                      << std::endl;
+    cpu->simpoint_asm << "// TODO - Others" << std::endl;
+    cpu->simpoint_asm << std::endl;
+}
+
 }
 
 RiscvISA::ISA *
