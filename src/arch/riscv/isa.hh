@@ -73,12 +73,26 @@ class ISA : public BaseISA
   protected:
     std::vector<RegVal> miscRegFile;
 
+    /** Simpoint saved */
+    uint64_t saved_lr;
+    int saved_fp;
+    int stack_depth;
+    std::stack<uint64_t> ss;
+    std::stack<int> fp_idx_queue;
+    std::stack<int> lr_idx_queue;
+
     bool hpmCounterEnabled(int counter) const;
 
     void dumpGenRegStore(BaseCPU *cpu, ThreadContext *tc);
     void dumpGenRegLoad(BaseCPU *cpu, ThreadContext *tc);
     void dumpMiscRegStore(BaseCPU *cpu, ThreadContext *tc);
     void dumpMiscRegLoad(BaseCPU *cpu, ThreadContext *tc);
+    uint64_t readMem(BaseCPU *cpu, ThreadContext *tc, Addr addr,
+        bool (*__readMem)(BaseCPU *cpu, Addr, uint8_t *, unsigned,
+                          Request::Flags flags));
+    void dumpStackStore(BaseCPU *cpu, ThreadContext *tc,
+        bool (*__readMem)(BaseCPU *cpu, Addr, uint8_t *, unsigned,
+                          Request::Flags flags));
 
   public:
     typedef RiscvISAParams Params;

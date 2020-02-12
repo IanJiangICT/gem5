@@ -44,6 +44,7 @@
 #include "debug/RiscvMisc.hh"
 #include "params/RiscvISA.hh"
 #include "sim/core.hh"
+#include "sim/process.hh"
 #include "sim/pseudo_inst.hh"
 
 namespace RiscvISA
@@ -416,6 +417,8 @@ ISA::dumpSimPointInit(BaseCPU *cpu, ThreadContext *tc,
                       Request::Flags))
 {
     dumpGenRegStore(cpu, tc);
+    dumpStackStore(cpu, tc, __readMem);
+
     cpu->simpoint_asm << std::endl;
     cpu->simpoint_asm << "/*" << std::endl;
     cpu->simpoint_asm << " * SimPoint Init entry" << std::endl;
@@ -519,6 +522,173 @@ ISA::dumpMiscRegLoad(BaseCPU *cpu, ThreadContext *tc)
                       << std::endl;
     cpu->simpoint_asm << "// TODO - Others" << std::endl;
     cpu->simpoint_asm << std::endl;
+}
+
+uint64_t
+ISA::readMem(BaseCPU *cpu, ThreadContext *tc, Addr addr,
+    bool (*__readMem)(BaseCPU *cpu, Addr, uint8_t *, unsigned,
+                      Request::Flags flags))
+{
+    uint64_t val;
+    Request::Flags flags = 0;
+
+    __readMem(cpu, addr, (uint8_t *)(&val), sizeof(uint64_t), flags);
+    return val;
+}
+
+void
+ISA::dumpStackStore(BaseCPU *cpu, ThreadContext *tc,
+    bool (*__readMem)(BaseCPU *cpu, Addr, uint8_t *, unsigned,
+                      Request::Flags flags))
+{
+    uint64_t sp, fp, lr, spTop, spBottom, fpLast, lrLast, ptr;
+    uint64_t fpVal, lrVal, val;
+    int i;
+    bool bottom_frame = false;
+    Process *process = tc->getProcessPtr();
+    Addr stackBase = process->memState->getStackBase();
+    Addr maxStackSize = process->memState->getMaxStackSize();
+    Addr validStackTop = stackBase + 1 - maxStackSize;
+
+    fpLast = fp = tc->readIntReg(8);
+    lrLast = lr = tc->readIntReg(1); // ra
+    // Only user programs are simulated.
+    // spTop: current the program is executed on the stack top.
+    spTop = sp = tc->readIntReg(2);
+
+    std::cout << std::hex;
+    std::cout << "Stack base = 0x" << stackBase << std::endl;
+    std::cout << "Stack max size = 0x" << maxStackSize << std::endl;
+    std::cout << "Stack valid top = 0x" << validStackTop << std::endl;
+    std::cout << "Stack sp = 0x" << sp << std::endl;
+    std::cout << "Stack fp = 0x" << fp << std::endl;
+    std::cout << std::dec;
+    cpu->simpoint_asm << ".section .rodata" << std::endl;
+    cpu->simpoint_asm << ".balign 8" << std::endl;
+    cpu->simpoint_asm << "/*" << std::endl;
+    cpu->simpoint_asm << " * Storage for stack"
+                      << std::endl;
+    cpu->simpoint_asm << " */" << std::endl;
+    cpu->simpoint_asm << std::hex;
+    cpu->simpoint_asm << "simpoint_stack_top:" << std::endl;
+    cpu->simpoint_asm << std::dec;
+/*
+Stack
+      +-> |                 |  Stack Bottom
+      |   +-----------------+
+      |   | return address  |
+      |   | NOT a valid addr|  Bottom Frame
+      |   | saved registers |
+      |   | local variables |
+      |   |       ...       | <-+
+      |   +-----------------+   |
+      |   | return address  |   |
+      +------ previous fp   |   |
+          | saved registers |   |
+          | local variables |   |
+  $fp --> |       ...       |   |
+          +-----------------+   |
+          | return address  |   |
+          |   previous fp ------+
+          | saved registers |
+  $sp --> | local variables |
+          +-----------------+
+*/
+    if (fp <= validStackTop || sp <= validStackTop) {
+        std::cout << "Stack is empty" << std::endl;
+        cpu->simpoint_asm << "/* Empty stack */" << std::endl;
+        stack_depth = 0;
+        goto not_dump_stack;
+    }
+
+    i = 0;
+    while (1) {
+        ptr = sp;
+        while (ptr < fp - 16) {
+            val = readMem(cpu, tc, (Addr)ptr, __readMem);
+            ss.push(val);
+            cpu->simpoint_asm << "    .dword 0x" <<  std::hex << val
+                              << std::dec << std::endl;
+            std::cout << "Stack:";
+            std::cout << "0x" << std::hex << ptr << std::dec;
+            std::cout << ":";
+            std::cout << "0x" << std::hex << val << std::dec;
+            std::cout << std::endl;
+            ptr += 8;
+            i += 8;
+        }
+
+        /* FP should be aligned to 16 bytes.
+         * Otherwise this is the bottom frame. */
+        fpVal = readMem(cpu, tc, (Addr)(fp - 16), __readMem);
+        if (fpVal < validStackTop ) {
+            bottom_frame = true;
+        }
+        fp_idx_queue.push(i);
+        cpu->simpoint_asm << "    .dword 0x" <<  std::hex << fpVal
+                          << std::dec << " // FP" << std::endl;
+        ss.push(fpVal);
+        i += 8;
+        std::cout << "FP   :";
+        std::cout << "0x" << std::hex << (fp - 16) << std::dec;
+        std::cout << ":";
+        std::cout << "0x" << std::hex << fpVal << std::dec;
+        std::cout << std::endl;
+
+        lr_idx_queue.push(i);
+        lrVal = readMem(cpu, tc, (Addr)(fp - 8), __readMem);
+        cpu->simpoint_asm << "    .dword 0x" <<  std::hex << lrVal
+                          << std::dec << " // RA" << std::endl;
+        ss.push(lrVal);
+        i += 8;
+        std::cout << "RA   :";
+        std::cout << "0x" << std::hex << fp - 8 << std::dec;
+        std::cout << ":";
+        std::cout << "0x" << std::hex << lrVal << std::dec;
+        std::cout << std::endl;
+        sp = fp;
+        fp = fpVal;
+        lr = lrVal;
+
+#if 0
+        if (bottom_frame) {
+            uint64_t tmp_addr = sp;
+            uint64_t tmp_val = 0;
+            std::cout << std::hex;
+            for (int debug_cnt = 0; debug_cnt < 128; debug_cnt++) {
+                tmp_val = readMem(cpu, tc, (Addr)tmp_addr, __readMem);
+                std::cout << "Debug:0x" << tmp_addr
+                          << ":0x" << tmp_val << std::endl;
+                tmp_addr += 8;
+            }
+            std::cout << std::dec;
+        }
+#endif
+        if (bottom_frame)
+            break;
+    }
+
+    stack_depth = i;
+
+not_dump_stack:
+    spBottom = spTop + stack_depth;
+    cpu->simpoint_asm << std::hex;
+    cpu->simpoint_asm << "simpoint_stack_bottom:" << std::endl;
+    cpu->simpoint_asm << "    .dword 0x0" << std::endl;
+    cpu->simpoint_asm << "#define SIMPOINT_STACK_BASE 0x"
+                      << stackBase << std::endl;
+    cpu->simpoint_asm << "#define SIMPOINT_STACK_MAX_SIZE 0x"
+                      << maxStackSize << std::endl;
+    cpu->simpoint_asm << "#define SIMPOINT_STACK_SP_TOP 0x"
+                      << spTop << std::endl;
+    cpu->simpoint_asm << "#define SIMPOINT_STACK_SP_BOTTOM 0x"
+                      << spBottom << std::endl;
+    cpu->simpoint_asm << std::dec;
+
+    // Restore altered special registers.
+    tc->setIntReg(8, fpLast);
+    tc->setIntReg(1, lrLast);
+    tc->setIntReg(2, spTop);
 }
 
 }
