@@ -223,10 +223,14 @@ def template BranchExecute {{
     {
         std::vector<RegId> indices = {%(regs)s};
         std::stringstream ss;
+        std::string label;
         ss << mnemonic << ' ';
         for (const RegId& idx: indices)
             ss << registerName(idx) << ", ";
-        ss << imm;
+        if (symtab && symtab->findLabel(pc + imm, label))
+            ss << label;
+        else
+            ss << imm << " // No label found";
         return ss.str();
     }
 }};
