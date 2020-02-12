@@ -190,6 +190,9 @@ def template BranchDeclare {{
         branchTarget(const RiscvISA::PCState &branchPC) const override;
 
         using StaticInst::branchTarget;
+
+        bool markTarget(
+                Addr pc, Addr &target, Loader::SymbolTable *symtab) override;
     };
 }};
 
@@ -232,6 +235,17 @@ def template BranchExecute {{
         else
             ss << imm << " // No label found";
         return ss.str();
+    }
+
+    bool
+    %(class_name)s::markTarget(
+            Addr pc, Addr &target, Loader::SymbolTable *symtab)
+    {
+        std::string label;
+        target = pc + imm;
+        if (symtab && !symtab->findLabel(target, label))
+            symtab->insert_target(target);
+        return true;
     }
 }};
 

@@ -481,6 +481,7 @@ void
 ISA::dumpGenRegLoad(BaseCPU *cpu, ThreadContext *tc)
 {
     int i = 0;
+
     cpu->simpoint_asm << "/* Restore general-purpose risgisters. */"
                       << std::endl;
     cpu->simpoint_asm << "/* - Integer" << std::endl;
