@@ -495,12 +495,22 @@ ISA::dumpStackStore(BaseCPU *cpu, ThreadContext *tc,
     Addr stackBase = process->memState->getStackBase();
     Addr maxStackSize = process->memState->getMaxStackSize();
     Addr validStackTop = stackBase + 1 - maxStackSize;
+    struct ra_info {
+        int offset_in_stack;
+        Addr value;
+        std::string target_symbol;
+    };
+    std::list<struct ra_info> ra_info_list;
+    struct ra_info new_ra;
 
     fpLast = fp = tc->readIntReg(8);
     lrLast = lr = tc->readIntReg(1); // ra
     // Only user programs are simulated.
     // spTop: current the program is executed on the stack top.
     spTop = sp = tc->readIntReg(2);
+    new_ra.offset_in_stack = maxStackSize;
+    new_ra.value = lr;
+    ra_info_list.push_back(new_ra);
 
     std::cout << std::hex;
     std::cout << "Stack base = 0x" << stackBase << std::endl;
@@ -582,6 +592,11 @@ Stack
         cpu->simpoint_asm << "    .dword 0x" <<  std::hex << lrVal
                           << std::dec << " // RA" << std::endl;
         ss.push(lrVal);
+        if (!bottom_frame) {
+            new_ra.offset_in_stack = i;
+            new_ra.value = lrVal;
+            ra_info_list.push_back(new_ra);
+        }
         i += 8;
         std::cout << "RA   :";
         std::cout << "0x" << std::hex << fp - 8 << std::dec;
@@ -626,6 +641,27 @@ not_dump_stack:
     cpu->simpoint_asm << "#define SIMPOINT_STACK_SP_BOTTOM 0x"
                       << spBottom << std::endl;
     cpu->simpoint_asm << std::dec;
+    cpu->simpoint_asm << std::endl;
+
+    std::list<struct ra_info>::iterator it;
+    Loader::SymbolTable *symtab = Loader::debugSymbolTable;
+    cpu->simpoint_asm << "/* RA list */" << std::endl;
+    for (it = ra_info_list.begin(); it != ra_info_list.end(); ++it) {
+        std::string sym_str;
+        Addr addr;
+        if (symtab) {
+            symtab->insert_target(it->value);
+            if (symtab->findNearestSymbol(it->value, sym_str, addr))
+                cpu->markExecuted(addr);
+            if (symtab->findLabel(it->value, sym_str))
+                it->target_symbol = sym_str;
+            else
+                it->target_symbol = std::string("simpoint_unknown");
+        }
+        cpu->simpoint_asm << "#define RA_" << it->offset_in_stack
+                          << "_0x" << std::hex << it->value << std::dec
+                          << " " << it->target_symbol << std::endl;
+    }
     cpu->simpoint_asm << std::endl;
 
     // Restore altered special registers.
