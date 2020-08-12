@@ -546,11 +546,17 @@ Stack
   $sp --> | local variables |
           +-----------------+
 */
-    if (fp <= validStackTop || sp <= validStackTop) {
+    if (sp > stackBase || sp <= validStackTop || sp & 0xF) {
         std::cout << "Stack is empty" << std::endl;
         cpu->simpoint_asm << "/* Empty stack */" << std::endl;
         stack_depth = 0;
         goto not_dump_stack;
+    }
+    if (fp > stackBase || fp <= validStackTop || fp & 0xF) {
+        std::cout << "Stack No valid frame" << std::endl;
+        cpu->simpoint_asm << "// No valid frame" << std::endl;
+        ptr = sp;
+        goto no_valid_frame;
     }
 
     i = 0;
@@ -573,7 +579,7 @@ Stack
         /* FP should be aligned to 16 bytes.
          * Otherwise this is the bottom frame. */
         fpVal = readMem(cpu, tc, (Addr)(fp - 16), __readMem);
-        if (fpVal < validStackTop ) {
+        if (fpVal > stackBase || fpVal <= validStackTop || fpVal & 0xF) {
             bottom_frame = true;
         }
         fp_idx_queue.push(i);
@@ -623,6 +629,22 @@ Stack
 #endif
         if (bottom_frame)
             break;
+    }
+    ptr = sp;
+
+no_valid_frame:
+    while (ptr <= (stackBase & 0xFFFFFFFFFFFFFFF0)) {
+        val = readMem(cpu, tc, (Addr)ptr, __readMem);
+        ss.push(val);
+        cpu->simpoint_asm << "    .dword 0x" <<  std::hex << val
+                          << std::dec << std::endl;
+        std::cout << "Stack:";
+        std::cout << "0x" << std::hex << ptr << std::dec;
+        std::cout << ":";
+        std::cout << "0x" << std::hex << val << std::dec;
+        std::cout << std::endl;
+        ptr += 8;
+        i += 8;
     }
 
     stack_depth = i;
