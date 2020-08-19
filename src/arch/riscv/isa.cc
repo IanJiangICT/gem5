@@ -459,6 +459,11 @@ ISA::dumpGenRegStore(BaseCPU *cpu, ThreadContext *tc)
     cpu->simpoint_asm << std::endl;
     cpu->simpoint_asm << "/* Register Float */" << std::endl;
     cpu->simpoint_asm << "simpoint_reg_float:" << std::endl;
+    for (i = 0; i < NumFloatRegs; i++) {
+        RegVal val = tc->readFloatReg(i);
+        cpu->simpoint_asm << "    .dword 0x" << std::hex << val << std::dec
+                          << std::endl;
+    }
     cpu->simpoint_asm << std::endl;
 }
 
