@@ -472,6 +472,14 @@ ISA::dumpMiscRegStore(BaseCPU *cpu, ThreadContext *tc)
 {
     cpu->simpoint_asm << "/* Register Miscellaneous */" << std::endl;
     cpu->simpoint_asm << "simpoint_reg_misc:" << std::endl;
+    for (auto it = CSRData.begin(); it != CSRData.end(); it++) {
+        int phys_index = it->second.physIndex;
+        std::string name = it->second.name;
+        RegVal val = tc->readMiscReg(phys_index);
+        cpu->simpoint_asm << "    .dword 0x" << std::hex << val
+                          << " // 0x" << it->first << " " << name
+                          << std::dec << std::endl;
+    }
     cpu->simpoint_asm << std::endl;
 }
 
